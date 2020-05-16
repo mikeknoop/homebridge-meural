@@ -3,8 +3,9 @@ import type { Service, PlatformAccessory, CharacteristicValue, CharacteristicSet
 
 import { CanvasPlatform } from './platform';
 
-const axios = require('axios');
-const axiosRetry = require('axios-retry');
+import axios from 'axios';
+import axiosRetry from 'axios-retry';
+import type { AxiosResponse } from 'axios';
 
 axiosRetry(axios, { retries: 5, retryDelay: axiosRetry.exponentialDelay});
 
@@ -25,20 +26,20 @@ export class CanvasAccessory {
   private state = {
     Active: this.platform.Characteristic.Active.ACTIVE,
     ActiveIdentifier: 0,
-    ConfiguredName: "Meural Canvas",
+    ConfiguredName: 'Meural Canvas',
     RemoteKey: 0,
     SleepDiscoveryMode: this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE,
     Brightness: 100,
-    WasBrightnessZero: false
+    WasBrightnessZero: false,
   }
 
-  private previousRandom : number[] = []
+  private previousRandom: number[] = []
 
   private readonly headers = {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
+      'Accept': 'application/json',
+    },
   }
 
   constructor(
@@ -52,12 +53,16 @@ export class CanvasAccessory {
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Netgear')
-      .setCharacteristic(this.platform.Characteristic.Model, accessory.context.devices.map((device: any) => device.productKey).join(', '))
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.devices.map((device: any) => device.serialNumber).join(', '));
+      .setCharacteristic(this.platform.Characteristic.Model,
+        accessory.context.devices.map((device: any) => device.productKey).join(', '))
+      .setCharacteristic(this.platform.Characteristic.SerialNumber,
+        accessory.context.devices.map((device: any) => device.serialNumber).join(', '));
 
     // you can create multiple services for each accessory
-    this.service = this.accessory.getService(this.platform.Service.Television) ?? this.accessory.addService(this.platform.Service.Television);
-    this.brightnessService = this.accessory.getService(this.platform.Service.Lightbulb) ?? this.accessory.addService(this.platform.Service.Lightbulb);
+    this.service = this.accessory.getService(this.platform.Service.Television) ??
+      this.accessory.addService(this.platform.Service.Television);
+    this.brightnessService = this.accessory.getService(this.platform.Service.Lightbulb) ??
+      this.accessory.addService(this.platform.Service.Lightbulb);
 
     // To avoid "Cannot add a Service with the same UUID another Service without also defining a unique 'subtype' property." error,
     // when creating multiple services of the same type, you need to use the following syntax to specify a name and subtype id:
@@ -111,7 +116,8 @@ export class CanvasAccessory {
 
 
     // Add a placeholder input for the current playlist
-    const playlistInputService = this.accessory.getService('playlist') ?? this.accessory.addService(this.platform.Service.InputSource, 'playlist', 'Current Playlist');
+    const playlistInputService = this.accessory.getService('playlist') ??
+      this.accessory.addService(this.platform.Service.InputSource, 'playlist', 'Current Playlist');
     playlistInputService
       .setCharacteristic(this.platform.Characteristic.Identifier, 0)
       .setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Current Playlist')
@@ -120,7 +126,8 @@ export class CanvasAccessory {
       .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.HOME_SCREEN);
     this.service.addLinkedService(playlistInputService); // link to tv service
     
-    const randomInputService = this.accessory.getService('random') ?? this.accessory.addService(this.platform.Service.InputSource, 'random', 'Show Random');
+    const randomInputService = this.accessory.getService('random') ??
+      this.accessory.addService(this.platform.Service.InputSource, 'random', 'Show Random');
     randomInputService
       .setCharacteristic(this.platform.Characteristic.Identifier, 1)
       .setCharacteristic(this.platform.Characteristic.ConfiguredName, 'Show Random')
@@ -175,30 +182,30 @@ export class CanvasAccessory {
 
     if (this.state.Active) {
       // turn on
-      let requests : Function[] = []
+      const requests: Promise<AxiosResponse<any>>[] = [];
       for (const ip of this.ips) {
-        requests.push(axios.get('http://' + ip + '/remote/control_command/resume', this.headers))
+        requests.push(axios.get('http://' + ip + '/remote/control_command/resume', this.headers));
       }
       Promise.all(requests)
-        .then((values) => {
+        .then(() => {
           callback(null);
         })
         .catch((error: any) => {
-          this.platform.log.debug(error.message, error);
+          this.platform.log.debug(error.message);
           callback(error);
         });
     } else {
       // turn off
-      let requests : Function[] = []
+      const requests: Promise<AxiosResponse<any>>[] = [];
       for (const ip of this.ips) {
-        requests.push(axios.get('http://' + ip + '/remote/control_command/suspend', this.headers))
+        requests.push(axios.get('http://' + ip + '/remote/control_command/suspend', this.headers));
       }
       Promise.all(requests)
-        .then((values) => {
+        .then(() => {
           callback(null);
         })
         .catch((error: any) => {
-          this.platform.log.debug(error.message, error);
+          this.platform.log.debug(error.message);
           callback(error);
         });
     }
@@ -211,17 +218,17 @@ export class CanvasAccessory {
   async updateActive() {
     this.platform.log.debug('Update Characteristic Active');
 
-    let getDeviceActive = async (ip: string) => {
+    const getDeviceActive = async (ip: string) => {
       const response = await axios.get('http://' + ip + '/remote/control_check/sleep', this.headers);
-      const value : any = response.data.response;
+      const value: any = response.data.response;
       return !value;
-    }
+    };
 
-    let states : boolean[] = []
+    const states: boolean[] = [];
     for (const ip of this.ips) {
       await getDeviceActive(ip)
         .then((value: boolean) => {
-          states.push(value)
+          states.push(value);
         })
         .catch((error: any) => {
           this.platform.log.debug(error.request.res.responseUrl, error.message);
@@ -229,7 +236,9 @@ export class CanvasAccessory {
     }
     this.platform.log.debug('Updating Characteristic Active -> ', states);
     // if all are off, we call it off. mixed and all on is considered on
-    if (states.every((value : boolean) => { return !value })) {
+    if (states.every((value: boolean) => {
+      return !value;
+    })) {
       // all off
       this.state.Active = this.platform.Characteristic.Active.INACTIVE;
       this.service.updateCharacteristic(this.platform.Characteristic.Active, this.platform.Characteristic.Active.INACTIVE);
@@ -237,7 +246,7 @@ export class CanvasAccessory {
       // some or all on
       this.state.Active = this.platform.Characteristic.Active.ACTIVE;
       this.service.updateCharacteristic(this.platform.Characteristic.Active, this.platform.Characteristic.Active.ACTIVE);
-    };
+    }
     this.platform.log.debug('Updated Characteristic Active -> ', this.state.Active);
   }
 
@@ -275,32 +284,32 @@ export class CanvasAccessory {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'Authorization': token
-            }
+              'Authorization': token,
+            },
           };
           const response = await axios.get('https://api.meural.com/v0/user/devices', options);
-          const devices : any = response.data.data;
+          const devices: any = response.data.data;
           return devices;
-        }
+        };
 
         const getPlaylists = async (token: string) => {
           const options = {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'Authorization': token
-            }
+              'Authorization': token,
+            },
           };
-          let requests : Function[] = []
+          const requests: Promise<AxiosResponse<any>>[] = [];
           for (const device of this.accessory.context.devices) {
-            requests.push(axios.get('https://api.meural.com/v0/devices/' + device.id + '/galleries/?page=1&count=1000', options))
+            requests.push(axios.get('https://api.meural.com/v0/devices/' + device.id + '/galleries/?page=1&count=1000', options));
           }
           return await Promise.all(requests)
             .then((values) => {
               return values.map((response: any) => response.data.data);
             })
             .catch((error: any) => {
-              this.platform.log.debug(error.message, error);
+              this.platform.log.debug(error.message);
               callback(error);
             });
         };
@@ -309,32 +318,33 @@ export class CanvasAccessory {
           const options = {
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
+              'Accept': 'application/json',
+            },
           };
-          let requests : Function[] = []
-          for (let [deviceID, itemID] of Object.entries(items)) {
+          const requests: Promise<AxiosResponse<any>>[] = [];
+          for (const [deviceID, itemID] of Object.entries(items)) {
             // grab the IP for the device
-            let ip = this.accessory.context.devices.find((device : any) => device.id == deviceID).localIp;
-            requests.push(axios.get('http://' + ip + '/remote/control_command/change_item/' + itemID, options))
+            const ip = this.accessory.context.devices.find((device: any) => Number(device.id) === Number(deviceID)).localIp;
+            requests.push(axios.get('http://' + ip + '/remote/control_command/change_item/' + itemID, options));
           }
           return await Promise.all(requests)
             .then((values) => {
               return values.map((response: any) => response.data.data);
             })
             .catch((error: any) => {
-              this.platform.log.debug(error.message, error);
+              this.platform.log.debug(error.message);
               return;
               //callback(error); dont raise an error since we're just setting items which can be retried
             });
-        }
+        };
 
         // returns a random index that hasn't been seen recently
-        const getRandomNumberNotSeenRecently = (maxNumber: number) : number => {
+        const getRandomNumberNotSeenRecently = (maxNumber: number): number => {
           const lookback = Math.min(30, maxNumber - 1);
-          this.previousRandom = this.previousRandom.slice(-lookback); // limit the length of our previously seen items to the lookback window
+          // limit the length of our previously seen items to the lookback window
+          this.previousRandom = this.previousRandom.slice(-lookback);
           //this.platform.log.debug('previously seen random numbers', this.previousRandom);
-          let randomNumber = Math.floor(Math.random() * Math.floor(shortest)); // generate a chance
+          const randomNumber = Math.floor(Math.random() * Math.floor(maxNumber)); // generate a chance
           if (this.previousRandom.includes(randomNumber)) {
             // try again...
             this.platform.log.debug('Selected a number, but have seen it recently, trying again...', randomNumber, this.previousRandom);
@@ -343,41 +353,41 @@ export class CanvasAccessory {
             this.previousRandom.push(randomNumber);
             return randomNumber;
           }
-        }
+        };
 
         // first get a valid token since we need to make meural.com API calls
         const token = await this.platform.getToken();
 
         // grab the array of image IDs for each device's current playlist
-        const devices : any = await getDevices(token);
-        const allGalleries : any = await getPlaylists(token);
+        const devices: any = await getDevices(token);
+        const allGalleries: any = await getPlaylists(token);
 
         // pick a random index within the range of the shortest playlist
-        let currentGalleries : {[key: number]: number} = {};
+        const currentGalleries: {[key: number]: number} = {};
         for (const device of devices) {
           currentGalleries[device.id] = device.currentGallery;
         }
-        let galleries : any = [];
+        let galleries: any = [];
         for (const deviceGalleries of allGalleries) {
           galleries = galleries.concat(deviceGalleries);
         }
-        const lengths = galleries.map((gallery : any) => gallery.itemCount);
-        let shortest = Math.min(...lengths);
-        let randomIndex = getRandomNumberNotSeenRecently(shortest);
+        const lengths = galleries.map((gallery: any) => gallery.itemCount);
+        const shortest = Math.min(...lengths);
+        const randomIndex = getRandomNumberNotSeenRecently(shortest);
 
         this.platform.log.debug('Setting Characteristic ActiveIdentifier -> [random index, shortest]', [randomIndex, shortest]);
 
         // grab the item ID at that index for all devices
-        let pickedItems : {[key: number]: number} = {};
-        for (let [deviceID, currentGallery] of Object.entries(currentGalleries)) {
-          let gallery = galleries.find((gallery : any) => gallery.id === currentGallery);
+        const pickedItems: {[key: number]: number} = {};
+        for (const [deviceID, currentGallery] of Object.entries(currentGalleries)) {
+          const gallery = galleries.find((gallery: any) => gallery.id === currentGallery);
           pickedItems[Number(deviceID)] = gallery.itemIds[randomIndex];
         }
 
         this.platform.log.debug('Setting Characteristic ActiveIdentifier -> {picked items}', pickedItems);
 
         // set all devices on the local network to the image ID we selected at index
-        const responses = await setItems(pickedItems);
+        await setItems(pickedItems);
 
         setTimeout(() => {
           // set the state back to the default input to make the "show random" item act like a toggle
@@ -419,27 +429,29 @@ export class CanvasAccessory {
 
     // from https://developers.homebridge.io/#/characteristic/RemoteKey
     const KEY_MAP = [
-      [this.platform.Characteristic.RemoteKey.ARROW_UP, "/remote/control_command/set_key/up"],
-      [this.platform.Characteristic.RemoteKey.ARROW_DOWN, "/remote/control_command/set_key/down"],
-      [this.platform.Characteristic.RemoteKey.ARROW_LEFT, "/remote/control_command/set_key/left"],
-      [this.platform.Characteristic.RemoteKey.ARROW_RIGHT, "/remote/control_command/set_key/right"],
-      [this.platform.Characteristic.RemoteKey.BACK, "/remote/control_command/set_key/left"],
-      [this.platform.Characteristic.RemoteKey.INFORMATION, "/remote/control_command/set_key/up"],
-      [this.platform.Characteristic.RemoteKey.PLAY_PAUSE, "/remote/control_command/set_key/righ"]
-    ]
+      [this.platform.Characteristic.RemoteKey.ARROW_UP, '/remote/control_command/set_key/up'],
+      [this.platform.Characteristic.RemoteKey.ARROW_DOWN, '/remote/control_command/set_key/down'],
+      [this.platform.Characteristic.RemoteKey.ARROW_LEFT, '/remote/control_command/set_key/left'],
+      [this.platform.Characteristic.RemoteKey.ARROW_RIGHT, '/remote/control_command/set_key/right'],
+      [this.platform.Characteristic.RemoteKey.BACK, '/remote/control_command/set_key/left'],
+      [this.platform.Characteristic.RemoteKey.INFORMATION, '/remote/control_command/set_key/up'],
+      [this.platform.Characteristic.RemoteKey.PLAY_PAUSE, '/remote/control_command/set_key/right'],
+    ];
 
-    const SUPPORTED_KEYS : number[] = KEY_MAP.map((key : any) => { return key[0] }); 
+    const SUPPORTED_KEYS: number[] = KEY_MAP.map((key: any) => {
+      return key[0];
+    }); 
     if (SUPPORTED_KEYS.includes(value as number)) {
 
-      const key : any = KEY_MAP.find(key => key[0] === value);
+      const key: any = KEY_MAP.find(key => key[0] === value);
       const route = key[1];
 
-      let requests : Function[] = []
+      const requests: Promise<AxiosResponse<any>>[] = [];
       for (const ip of this.ips) {
-        requests.push(axios.get('http://' + ip + route, this.headers))
+        requests.push(axios.get('http://' + ip + route, this.headers));
       }
       Promise.all(requests)
-        .then((values) => {
+        .then(() => {
           callback(null);
         })
         .catch((error: any) => {
@@ -471,22 +483,22 @@ export class CanvasAccessory {
     this.platform.log.debug('Set Characteristic Brightness ->', value);
     this.state.Brightness = value as number;
 
-    if (this.state.Brightness == 0) {
+    if (this.state.Brightness === 0) {
       this.state.WasBrightnessZero = true;
     } else {
       this.state.WasBrightnessZero = false;
     }
 
-    let requests : Function[] = []
+    const requests: Promise<AxiosResponse<any>>[] = [];
     for (const ip of this.ips) {
-      requests.push(axios.get('http://' + ip + '/remote/control_command/set_backlight/' + value, this.headers))
+      requests.push(axios.get('http://' + ip + '/remote/control_command/set_backlight/' + value, this.headers));
     }
     Promise.all(requests)
-      .then((values) => {
+      .then(() => {
         callback(null);
       })
       .catch((error: any) => {
-        this.platform.log.debug(error.message, error);
+        this.platform.log.debug(error.message);
         callback(error);
       });
 
@@ -498,31 +510,31 @@ export class CanvasAccessory {
   async updateBrightness() {
     this.platform.log.debug('Update Characteristic Brightness');
 
-    let getDeviceBrightness = async (ip: string) => {
+    const getDeviceBrightness = async (ip: string) => {
       const response = await axios.get('http://' + ip + '/remote/get_backlight', this.headers);
-      const value : any = response.data.response;
+      const value: any = response.data.response;
       return value;
-    }
+    };
 
-    let states : number[] = []
+    const states: number[] = [];
     for (const ip of this.ips) {
       await getDeviceBrightness(ip)
         .then((value: number) => {
-          states.push(value)
+          states.push(value);
         })
         .catch((error: any) => {
-          this.platform.log.debug(error.message, error);
+          this.platform.log.debug(error.message);
         });
     }
 
     // take the max brightness across all screens, call that the brightness
-    let max : number = Math.max(...states);
+    const max: number = Math.max(...states);
 
-    this.state.Brightness = max
+    this.state.Brightness = max;
     this.service.updateCharacteristic(this.platform.Characteristic.Brightness, max);
     this.brightnessService.updateCharacteristic(this.platform.Characteristic.Brightness, max);
 
-    if (this.state.Brightness == 0) {
+    if (this.state.Brightness === 0) {
       this.state.WasBrightnessZero = true;
     } else {
       this.state.WasBrightnessZero = false;
@@ -538,7 +550,7 @@ export class CanvasAccessory {
   getBrightnessOn(callback: CharacteristicGetCallback) {
     this.platform.log.debug('Get Characteristic Brightness On ->', this.state.Brightness > 0);
     this.getBrightness((error, value) => {
-      callback(error, value as number > 0)
+      callback(error, value as number > 0);
     });
   }
 

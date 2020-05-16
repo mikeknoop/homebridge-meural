@@ -4,8 +4,8 @@ import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformCon
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { CanvasAccessory } from './platformAccessory';
 
-const axios = require("axios");
-const axiosRetry = require('axios-retry');
+import axios from 'axios';
+import axiosRetry from 'axios-retry';
 
 axiosRetry(axios, { retries: 5, retryDelay: axiosRetry.exponentialDelay});
 
@@ -21,7 +21,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
-  public token: string = "";
+  public token = '';
 
   constructor(
     public readonly log: Logger,
@@ -64,18 +64,18 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
       const options = {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      }
+          'Accept': 'application/json',
+        },
+      };
       const response = await axios.post('https://api.meural.com/v0/authenticate', {
         username: this.config.account_email,
-        password: this.config.account_password
+        password: this.config.account_password,
       }, options);
       this.token = 'Token ' + response.data.token;
       return this.token;
     } catch (error) {
       this.log.debug(error.request.res.responseUrl, error.message);
-      return "";
+      return '';
     }
   }
 
@@ -83,7 +83,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
    * Return the cached token if it exists, otherwise fetch a new one and return that
    */
   async getToken(): Promise<string> {
-    if (this.token !== "") {
+    if (this.token !== '') {
       return this.token;
     } else {
       await this.refreshToken();
@@ -98,7 +98,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
 
     // loop over cached devices and remove any that are not active anymore
     for (const cachedAccessory of this.accessories) {
-      let unreg : boolean = false;
+      let unreg = false;
       for (const cachedDevice of cachedAccessory.context.devices) {
         if (!devices.find((accessory: any) => accessory.id === cachedDevice.id)) {
           unreg = true;
@@ -116,8 +116,8 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
    */
   unregisterAll() {
     for (const cachedAccessory of this.accessories) {
-        this.log.info('Un-registering accessory:', cachedAccessory.UUID);
-        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [cachedAccessory]);
+      this.log.info('Un-registering accessory:', cachedAccessory.UUID);
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [cachedAccessory]);
     }
   }
 
@@ -134,50 +134,50 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': token
-          }
-        }
+            'Authorization': token,
+          },
+        };
         const response = await axios.get('https://api.meural.com/v0/user/devices', options);
-        const devices : any = response.data.data;
+        const devices: any = response.data.data;
 
         this.unregisterRemoved(devices);
 
         // append all device IDs together as we're grouping all meural canvases into a single devices
         // homekit only allows 1 TV per bridge. we also do this for UX reasons.
-        let ids : string = devices.map((device: any) => device.id).join(', ')
-        let keys : string = devices.map((device: any) => device.productKey).join(', ')
+        const ids: string = devices.map((device: any) => device.id).join(', ');
+        const keys: string = devices.map((device: any) => device.productKey).join(', ');
 
         // generate a unique id for the accessory this should be generated from
         // something globally unique, but constant, for example, the device serial
         // number or MAC address
         const uuid = this.api.hap.uuid.generate(ids);
 
-          // check that the device has not already been registered by checking the
-          // cached devices we stored in the `configureAccessory` method above
-          if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
-            this.log.info('Registering new accessory:', keys);
+        // check that the device has not already been registered by checking the
+        // cached devices we stored in the `configureAccessory` method above
+        if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
+          this.log.info('Registering new accessory:', keys);
 
-            // create a new accessory
-            const accessory = new this.api.platformAccessory(keys, uuid);
+          // create a new accessory
+          const accessory = new this.api.platformAccessory(keys, uuid);
 
-            // store a copy of all the devices objects in the `accessory.context`
-            // the `context` property can be used to store any data about the accessory you may need
-            accessory.context.devices = devices;
+          // store a copy of all the devices objects in the `accessory.context`
+          // the `context` property can be used to store any data about the accessory you may need
+          accessory.context.devices = devices;
 
-            // create the accessory handler
-            // this is imported from `platformAccessory.ts`
-            new CanvasAccessory(this, accessory);
+          // create the accessory handler
+          // this is imported from `platformAccessory.ts`
+          new CanvasAccessory(this, accessory);
 
-            // link the accessory to your platform
-            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          // link the accessory to your platform
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
-            // push into accessory cache
-            this.accessories.push(accessory);
-          }
+          // push into accessory cache
+          this.accessories.push(accessory);
+        }
         
       })
       .catch((error: any) => {
-        this.log.debug(error.message, error);
+        this.log.debug(error.message);
       });
 
   }
