@@ -1,5 +1,5 @@
 {
-  "private": true,
+  "private": false,
   "displayName": "Meural Canvas",
   "name": "homebridge-meural",
   "version": "0.9.0",
