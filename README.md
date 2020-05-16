@@ -52,6 +52,14 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
 * Initial release
 * Adds support for Canvas (single or many) added as a single Television accessory
 
+## Development
+
+1. Install Homebridge
+2. `npm install`
+3. `npm run watch`
+
+This repo is written in TypeScript.
+
 ## License
 
 MIT
