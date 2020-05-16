@@ -2,26 +2,33 @@ import { APIEvent } from 'homebridge';
 import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { ExamplePlatformAccessory } from './platformAccessory';
+import { CanvasAccessory } from './platformAccessory';
+
+const axios = require("axios");
+const axiosRetry = require('axios-retry');
+
+axiosRetry(axios, { retries: 5, retryDelay: axiosRetry.exponentialDelay});
 
 /**
  * HomebridgePlatform
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
  */
-export class ExampleHomebridgePlatform implements DynamicPlatformPlugin {
+export class CanvasPlatform implements DynamicPlatformPlugin {
   public readonly Service = this.api.hap.Service;
   public readonly Characteristic = this.api.hap.Characteristic;
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
+  public token: string = "";
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.log.debug('Finished initializing platform:', this.config.name);
+    this.log.debug('Finished initializing platform:', this.config.platform);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -43,10 +50,75 @@ export class ExampleHomebridgePlatform implements DynamicPlatformPlugin {
 
     // create the accessory handler
     // this is imported from `platformAccessory.ts`
-    new ExamplePlatformAccessory(this, accessory);
+    new CanvasAccessory(this, accessory);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
     this.accessories.push(accessory);
+  }
+
+  /**
+   * Promise to refresh auth token from a new auth request
+   */
+  async refreshToken(): Promise<string> {
+    try {
+      const options = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
+      const response = await axios.post('https://api.meural.com/v0/authenticate', {
+        username: this.config.account_email,
+        password: this.config.account_password
+      }, options);
+      this.token = 'Token ' + response.data.token;
+      return this.token;
+    } catch (error) {
+      this.log.debug(error.request.res.responseUrl, error.message);
+      return "";
+    }
+  }
+
+  /**
+   * Return the cached token if it exists, otherwise fetch a new one and return that
+   */
+  async getToken(): Promise<string> {
+    if (this.token !== "") {
+      return this.token;
+    } else {
+      await this.refreshToken();
+      return this.token;
+    }
+  }
+
+  /**
+   * Unregister grouped canvas if one of the children doesn't exist anyore so we can re-add fresh
+   */
+  unregisterRemoved(devices: any) {
+
+    // loop over cached devices and remove any that are not active anymore
+    for (const cachedAccessory of this.accessories) {
+      let unreg : boolean = false;
+      for (const cachedDevice of cachedAccessory.context.devices) {
+        if (!devices.find((accessory: any) => accessory.id === cachedDevice.id)) {
+          unreg = true;
+        }
+      }
+      if (unreg) {
+        this.log.info('Un-registering accessory:', cachedAccessory.UUID);
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [cachedAccessory]);
+      }
+    }
+  }
+
+  /**
+   * for debugging, unregister all cached devices that are loaded
+   */
+  unregisterAll() {
+    for (const cachedAccessory of this.accessories) {
+        this.log.info('Un-registering accessory:', cachedAccessory.UUID);
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [cachedAccessory]);
+    }
   }
 
   /**
@@ -56,54 +128,57 @@ export class ExampleHomebridgePlatform implements DynamicPlatformPlugin {
    */
   discoverDevices() {
 
-    // EXAMPLE ONLY
-    // A real plugin you would discover accessories from the local network, cloud services
-    // or a user-defined array in the platform config.
-    const exampleDevices = [
-      {
-        exampleUniqueId: 'ABCD',
-        exampleDisplayName: 'Bedroom',
-      },
-      {
-        exampleUniqueId: 'EFGH',
-        exampleDisplayName: 'Kitchen',
-      },
-    ];
+    this.getToken()
+      .then(async (token: string) => {
+        const options = {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': token
+          }
+        }
+        const response = await axios.get('https://api.meural.com/v0/user/devices', options);
+        const devices : any = response.data.data;
 
-    // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of exampleDevices) {
+        this.unregisterRemoved(devices);
 
-      // generate a unique id for the accessory this should be generated from
-      // something globally unique, but constant, for example, the device serial
-      // number or MAC address
-      const uuid = this.api.hap.uuid.generate(device.exampleUniqueId);
+        // append all device IDs together as we're grouping all meural canvases into a single devices
+        // homekit only allows 1 TV per bridge. we also do this for UX reasons.
+        let ids : string = devices.map((device: any) => device.id).join(', ')
+        let keys : string = devices.map((device: any) => device.productKey).join(', ')
 
-      // check that the device has not already been registered by checking the
-      // cached devices we stored in the `configureAccessory` method above
-      if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
-        this.log.info('Registering new accessory:', device.exampleDisplayName);
+        // generate a unique id for the accessory this should be generated from
+        // something globally unique, but constant, for example, the device serial
+        // number or MAC address
+        const uuid = this.api.hap.uuid.generate(ids);
 
-        // create a new accessory
-        const accessory = new this.api.platformAccessory(device.exampleDisplayName, uuid);
+          // check that the device has not already been registered by checking the
+          // cached devices we stored in the `configureAccessory` method above
+          if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
+            this.log.info('Registering new accessory:', keys);
 
-        // store a copy of the device object in the `accessory.context`
-        // the `context` property can be used to store any data about the accessory you may need
-        accessory.context.device = device;
+            // create a new accessory
+            const accessory = new this.api.platformAccessory(keys, uuid);
 
-        // create the accessory handler
-        // this is imported from `platformAccessory.ts`
-        new ExamplePlatformAccessory(this, accessory);
+            // store a copy of all the devices objects in the `accessory.context`
+            // the `context` property can be used to store any data about the accessory you may need
+            accessory.context.devices = devices;
 
-        // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            // create the accessory handler
+            // this is imported from `platformAccessory.ts`
+            new CanvasAccessory(this, accessory);
 
-        // push into accessory cache
-        this.accessories.push(accessory);
+            // link the accessory to your platform
+            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
-        // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
-        // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      }
-    }
+            // push into accessory cache
+            this.accessories.push(accessory);
+          }
+        
+      })
+      .catch((error: any) => {
+        this.log.debug(error.message, error);
+      });
 
   }
 }

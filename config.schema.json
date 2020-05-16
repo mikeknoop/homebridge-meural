@@ -1,15 +1,27 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "MeuralCanvas",
   "pluginType": "platform",
   "singular": true,
   "schema": {
     "type": "object",
     "properties": {
       "name": {
-        "title": "Name",
+        "title": "platform",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "MeuralCanvas"
+      },
+      "account_email": {
+        "title": "Account Email",
+        "type": "string",
+        "required": true,
+        "default": ""
+      },
+      "account_password": {
+        "title": "Account Password",
+        "type": "string",
+        "required": true,
+        "default": ""
       }
     }
   }
