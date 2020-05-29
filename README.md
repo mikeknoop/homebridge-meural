@@ -55,8 +55,9 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
 ## Development
 
 1. Install Homebridge
-2. `npm install`
-3. `npm run watch`
+2. `npm link` (first time only, to link npm repo for your local dev environment)
+3. `npm install`
+4. `npm run watch`
 
 This repo is written in TypeScript.
 
