@@ -231,7 +231,7 @@ export class CanvasAccessory {
           states.push(value);
         })
         .catch((error: any) => {
-          this.platform.log.debug(error.request.res.responseUrl, error.message);
+          this.platform.log.debug(error.request.res.requestUrl, error.message);
         });
     }
     this.platform.log.debug('Updating Characteristic Active -> ', states);
