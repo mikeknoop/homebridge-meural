@@ -74,7 +74,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
       this.token = 'Token ' + response.data.token;
       return this.token;
     } catch (error) {
-      this.log.debug(error.request.res.responseUrl, error.message);
+      this.log.debug(error.message, error);
       return '';
     }
   }
