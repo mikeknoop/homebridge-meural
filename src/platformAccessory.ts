@@ -73,6 +73,7 @@ export class CanvasAccessory {
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
 
+    this.state.ConfiguredName = this.accessory.context.devices[0].alias;
     this.service.setCharacteristic(this.platform.Characteristic.ConfiguredName, this.state.ConfiguredName);
     this.service.getCharacteristic(this.platform.Characteristic.ConfiguredName)
       .on(CharacteristicEventTypes.SET, this.setConfiguredName.bind(this))
@@ -344,7 +345,7 @@ export class CanvasAccessory {
           // limit the length of our previously seen items to the lookback window
           this.previousRandom = this.previousRandom.slice(-lookback);
           //this.platform.log.debug('previously seen random numbers', this.previousRandom);
-          const randomNumber = Math.floor(Math.random() * Math.floor(maxNumber)); // generate a chance
+          const randomNumber = Math.floor(this.platform.getRandom() * Math.floor(maxNumber)); // generate a chance
           if (this.previousRandom.includes(randomNumber)) {
             // try again...
             this.platform.log.debug('Selected a number, but have seen it recently, trying again...', randomNumber, this.previousRandom);
@@ -381,7 +382,9 @@ export class CanvasAccessory {
         const pickedItems: {[key: number]: number} = {};
         for (const [deviceID, currentGallery] of Object.entries(currentGalleries)) {
           const gallery = galleries.find((gallery: any) => gallery.id === currentGallery);
-          pickedItems[Number(deviceID)] = gallery.itemIds[randomIndex];
+          if (gallery) {
+            pickedItems[Number(deviceID)] = gallery.itemIds[randomIndex];
+          }
         }
 
         this.platform.log.debug('Setting Characteristic ActiveIdentifier -> {picked items}', pickedItems);
