@@ -128,38 +128,37 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
 
   memoizeTimeout(fn: any, time: number) {
 
-    const atob = (a: any) => Buffer.from(a, 'base64').toString('binary');
     const btoa = (b: any) => Buffer.from(b).toString('base64');
 
     let timeId: any;
 
-    let cache : {
-      [key: string]: any
+    let cache: {
+      [key: string]: any;
     } = {};
 
     return (...args: any[]) => {
 
-        //Erase cache.
-        timeId = setTimeout(() => {
-          cache = {};
-          clearInterval(timeId);
-        }, time);
+      //Erase cache.
+      timeId = setTimeout(() => {
+        cache = {};
+        clearInterval(timeId);
+      }, time);
 
-        //Create hash.
-        const n = btoa(args);
+      //Create hash.
+      const n = btoa(args);
 
-        //Find in cache or store new values.      
-        if (n in cache) { 
+      //Find in cache or store new values.      
+      if (n in cache) { 
 
-          return cache[n];
+        return cache[n];
 
-        } else {    
-          let result = fn(n);        
-          cache[n] = result;
-          return result;
-        }
+      } else {    
+        const result = fn(n);        
+        cache[n] = result;
+        return result;
+      }
 
-    }
+    };
 
   }
 
