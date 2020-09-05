@@ -23,12 +23,16 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
 
   public token = '';
 
+  public getRandom: any;
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.platform);
+
+    this.getRandom = this.memoizeTimeout(this.getRandomDirect, 10000);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -121,6 +125,51 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
     }
   }
 
+
+  memoizeTimeout(fn: any, time: number) {
+
+    const btoa = (b: any) => Buffer.from(b).toString('base64');
+
+    let timeId: any;
+
+    let cache: {
+      [key: string]: any;
+    } = {};
+
+    return (...args: any[]) => {
+
+      //Erase cache.
+      timeId = setTimeout(() => {
+        cache = {};
+        clearInterval(timeId);
+      }, time);
+
+      //Create hash.
+      const n = btoa(args);
+
+      //Find in cache or store new values.      
+      if (n in cache) { 
+
+        return cache[n];
+
+      } else {    
+        const result = fn(n);        
+        cache[n] = result;
+        return result;
+      }
+
+    };
+
+  }
+
+  getRandomDirect(): number {
+    // const now = Math.floor(Date.now() / 1000);
+    // const seed = Math.ceil(now / 10) * 10;
+    // var x = Math.sin(seed++) * 10000;
+    // return x - Math.floor(x);
+    return Math.random();
+  }
+
   /**
    * This is an example method showing how to register discovered accessories.
    * Accessories must only be registered once, previously created accessories
@@ -142,41 +191,51 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
 
         this.unregisterRemoved(devices);
 
-        // append all device IDs together as we're grouping all meural canvases into a single devices
-        // homekit only allows 1 TV per bridge. we also do this for UX reasons.
-        const ids: string = devices.map((device: any) => device.id).join(', ');
-        const keys: string = devices.map((device: any) => device.productKey).join(', ');
+        for (const device of devices) {
 
-        // generate a unique id for the accessory this should be generated from
-        // something globally unique, but constant, for example, the device serial
-        // number or MAC address
-        const uuid = this.api.hap.uuid.generate(ids);
+          // append all device IDs together as we're grouping all meural canvases into a single devices
+          // homekit only allows 1 TV per bridge. we also do this for UX reasons.
+          //const ids: string = devices.map((device: any) => device.id).join(', ');
+          //const keys: string = devices.map((device: any) => device.productKey).join(', ');
 
-        // check that the device has not already been registered by checking the
-        // cached devices we stored in the `configureAccessory` method above
-        if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
-          this.log.info('Registering new accessory:', keys);
+          const id = device.id;
+          const key = device.productKey;
 
-          // create a new accessory
-          const accessory = new this.api.platformAccessory(keys, uuid);
+          // generate a unique id for the accessory this should be generated from
+          // something globally unique, but constant, for example, the device serial
+          // number or MAC address
+          //const uuid = this.api.hap.uuid.generate(ids);
+          const uuid = this.api.hap.uuid.generate(String(id));
 
-          // store a copy of all the devices objects in the `accessory.context`
-          // the `context` property can be used to store any data about the accessory you may need
-          accessory.context.devices = devices;
+          // check that the device has not already been registered by checking the
+          // cached devices we stored in the `configureAccessory` method above
+          if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
+            this.log.info('Registering new accessory:', key);
 
-          // create the accessory handler
-          // this is imported from `platformAccessory.ts`
-          new CanvasAccessory(this, accessory);
+            // create a new accessory
+            const accessory = new this.api.platformAccessory(key, uuid);
 
-          // link the accessory to your platform
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            // store a copy of all the devices objects in the `accessory.context`
+            // the `context` property can be used to store any data about the accessory you may need
+            accessory.context.devices = [device];
 
-          // push into accessory cache
-          this.accessories.push(accessory);
+            // create the accessory handler
+            // this is imported from `platformAccessory.ts`
+            new CanvasAccessory(this, accessory);
+
+            // link the accessory to your platform
+            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+
+            // push into accessory cache
+            this.accessories.push(accessory);
+
+          }
+
         }
         
       })
       .catch((error: any) => {
+        throw error;
         this.log.debug(error.message);
       });
 
