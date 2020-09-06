@@ -341,7 +341,7 @@ export class CanvasAccessory {
 
         // returns a random index that hasn't been seen recently
         const getRandomNumberNotSeenRecently = (maxNumber: number): number => {
-          const lookback = Math.min(30, maxNumber - 1);
+          const lookback = Math.min(30, maxNumber - 3);
           // limit the length of our previously seen items to the lookback window
           this.previousRandom = this.previousRandom.slice(-lookback);
           //this.platform.log.debug('previously seen random numbers', this.previousRandom);
