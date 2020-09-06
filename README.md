@@ -47,6 +47,10 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
 
 ## Version history
 
+`0.9.4`:
+
+* Increase the sync time for "show random" to 60s from 10s
+
 `0.9.3`:
 
 * Ungroups mulitple canvases to show them as separate devices now
