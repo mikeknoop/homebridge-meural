@@ -32,7 +32,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.platform);
 
-    this.getRandom = this.memoizeTimeout(this.getRandomDirect, 10000);
+    this.getRandom = this.memoizeTimeout(this.getRandomDirect, 60000);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
