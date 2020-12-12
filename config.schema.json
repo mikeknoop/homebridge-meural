@@ -22,6 +22,14 @@
         "type": "string",
         "required": true,
         "default": ""
+      },
+      "exclude_devices": {
+        "title": "Account Password",
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "required": false
       }
     }
   }

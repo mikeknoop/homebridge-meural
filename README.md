@@ -34,7 +34,8 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
         {
           "platform": "MeuralCanvas",
           "account_email": "", // for online https://my.meural.netgear.com/ account
-          "account_password": ""
+          "account_password": "",
+          "exclude_devices": ["5TS19578A01D8", ...] // optional, excludes a device in your account from appearing in HomeKit
         }
         ...
     ]
@@ -46,6 +47,10 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
 2. `npm install homebridge-meural`
 
 ## Version history
+
+`0.9.5`:
+
+* Adds a new config option `exclude_devices` which takes an array of Meural serial numbers and excludes them from showing up in HomeKit
 
 `0.9.4`:
 

@@ -187,7 +187,18 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
           },
         };
         const response = await axios.get('https://api.meural.com/v0/user/devices', options);
-        const devices: any = response.data.data;
+        const allDevices: any = response.data.data;
+
+        // remove any devices the config specifies to not include in homekit
+        // uses the device serialNumber to id the device
+        const devices: any = [];
+        for (const checkDevice of allDevices) {
+          if (this.config.exclude_devices && this.config.exclude_devices.includes(checkDevice.serialNumber)) {
+            // do nothing
+          } else {
+            devices.push(checkDevice);
+          }
+        }
 
         this.unregisterRemoved(devices);
 
