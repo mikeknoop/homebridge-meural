@@ -24,7 +24,7 @@
         "default": ""
       },
       "exclude_devices": {
-        "title": "Account Password",
+        "title": "Exclude Devices",
         "type": "array",
         "items": {
           "type": "string"
