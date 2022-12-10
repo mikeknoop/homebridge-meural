@@ -236,7 +236,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
             new CanvasAccessory(this, accessory);
 
             // link the accessory to your platform
-            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
 
             // push into accessory cache
             this.accessories.push(accessory);

@@ -23,11 +23,6 @@
         "required": true,
         "default": ""
       },
-      "control_center_remote": {
-        "title": "Add Control Center Remote",
-        "type": "bool",
-        "default": true,
-      },
       "exclude_devices": {
         "title": "Exclude Devices",
         "type": "array",

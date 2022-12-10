@@ -35,7 +35,6 @@ Works with Canvas I, Canvas II, and Frame.
           "platform": "MeuralCanvas",
           "account_email": "", // for online https://my.meural.netgear.com/ account
           "account_password": "",
-          "control_center_remote": true, // optional, if false will not show a remote in control center
           "exclude_devices": ["5TS19578A01D8", ...] // optional, excludes a device in your account from appearing in HomeKit
         }
         ...
@@ -49,9 +48,9 @@ Works with Canvas I, Canvas II, and Frame.
 
 ## Version history
 
-`0.9.6`:
+`0.9.7`:
 
-* Adds a new config option `control_center_remote` defaulted to true, which can disable showing Meural's in control center remotes
+* Publish Meurals as separate accessories so each has a dedicate remote in control center
 
 `0.9.5`:
 
