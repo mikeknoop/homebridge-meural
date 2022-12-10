@@ -93,7 +93,7 @@ export class CanvasAccessory {
     this.service.getCharacteristic(this.platform.Characteristic.SleepDiscoveryMode)
       .on(CharacteristicEventTypes.GET, this.getSleepDiscoveryMode.bind(this));
 
-    if (this.accessory.context.control_center_remote) {
+    if (this.accessory.context.controlCenterRemote) {
       this.service.getCharacteristic(this.platform.Characteristic.RemoteKey)
         .on(CharacteristicEventTypes.SET, this.setRemoteKey.bind(this));
     }

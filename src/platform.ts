@@ -229,7 +229,7 @@ export class CanvasPlatform implements DynamicPlatformPlugin {
             // store a copy of all the devices objects in the `accessory.context`
             // the `context` property can be used to store any data about the accessory you may need
             accessory.context.devices = [device];
-            accessory.context.control_center_remote = this.config.control_center_remote;
+            accessory.context.controlCenterRemote = this.config.control_center_remote;
 
             // create the accessory handler
             // this is imported from `platformAccessory.ts`
