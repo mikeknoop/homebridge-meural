@@ -93,8 +93,10 @@ export class CanvasAccessory {
     this.service.getCharacteristic(this.platform.Characteristic.SleepDiscoveryMode)
       .on(CharacteristicEventTypes.GET, this.getSleepDiscoveryMode.bind(this));
 
-    this.service.getCharacteristic(this.platform.Characteristic.RemoteKey)
-      .on(CharacteristicEventTypes.SET, this.setRemoteKey.bind(this));
+    if (this.accessory.context.control_center_remote) {
+      this.service.getCharacteristic(this.platform.Characteristic.RemoteKey)
+        .on(CharacteristicEventTypes.SET, this.setRemoteKey.bind(this));
+    }
 
     // add the brightness control to the Television service (appears to do nothing in Home app)
     this.service.setCharacteristic(this.platform.Characteristic.Brightness, this.state.Brightness);

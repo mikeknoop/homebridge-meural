@@ -10,7 +10,7 @@
 
 # Meural Canvas
 
-Control Meural canvases via HomeKit. Supports single or multiple canvases. If you only have one canvas in your account, then iOS will show a Television control in Control Center (Note: iOS 13 only supports one Television accessory per bridge).
+Control Meural canvases via HomeKit. Supports single or multiple canvases.
 
 * Previous Photo ("swipe left") [via control center]
 * Next Photo ("swipe right") [via control center]
@@ -20,7 +20,7 @@ Control Meural canvases via HomeKit. Supports single or multiple canvases. If yo
 * Control brightness, on/off [via Home app]
 * Automate on/off, brightness, and show random [via Home app]
 
-Known to work with Meural Canvas I. Should work with Cavnas II as well, but not confirmed.
+Works with Canvas I, Canvas II, and Frame.
 
 ## Installation
 
@@ -35,6 +35,7 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
           "platform": "MeuralCanvas",
           "account_email": "", // for online https://my.meural.netgear.com/ account
           "account_password": "",
+          "control_center_remote": true, // optional, if false will not show a remote in control center
           "exclude_devices": ["5TS19578A01D8", ...] // optional, excludes a device in your account from appearing in HomeKit
         }
         ...
@@ -47,6 +48,10 @@ Known to work with Meural Canvas I. Should work with Cavnas II as well, but not 
 2. `npm install homebridge-meural`
 
 ## Version history
+
+`0.9.6`:
+
+* Adds a new config option `control_center_remote` defaulted to true, which can disable showing Meural's in control center remotes
 
 `0.9.5`:
 
