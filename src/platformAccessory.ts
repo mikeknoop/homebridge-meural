@@ -276,7 +276,7 @@ export class CanvasAccessory {
     this.state.ActiveIdentifier = value as number;
     if (value === 1) {
 
-      const showRandom = async (callback: CharacteristicSetCallback) => { 
+      const showRandom = async (callback: CharacteristicSetCallback) => {
         // user selected "show random" source
         // select a random index from current playlist and show that index across all devices
         // then delay an update to toggle the input back to "current playlist"
@@ -407,6 +407,8 @@ export class CanvasAccessory {
 
       showRandom(callback);
 
+    } else {
+      callback(null);
     }
   }
 

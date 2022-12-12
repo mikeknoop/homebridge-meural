@@ -48,6 +48,10 @@ Works with Canvas I, Canvas II, and Frame.
 
 ## Version history
 
+`0.9.8`:
+
+* Fix slow handling of ActiveIdentifier callback bug
+
 `0.9.7`:
 
 * Publish Meurals as separate accessories so each has a dedicate remote in control center
